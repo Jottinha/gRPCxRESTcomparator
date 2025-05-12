@@ -40,8 +40,9 @@ Fornecer uma base prática e comparativa entre REST e gRPC, demonstrando:
 └────┬───────┘ └────┬──────────┘
      ↓              ↓
 ┌─────────────────────────────┐
-│ Orchestrator recebe os dados│
-│ e os tempos de resposta     │
+│ Orchestrator Service recebe │
+│ os dados e os tempos de     │
+│ resposta                    │
 └────┬────────────────────────┘
      ↓
 ┌─────────────────────────────┐
