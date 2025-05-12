@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  catalog-provider:
+    build: ./catalog-provider
+    container_name: catalog-provider
+    ports:
+      - "8081:8080"
+
+  rest-orchestrator:
+    build: ./rest-orchestrator
+    container_name: rest-orchestrator
+    ports:
+      - "8082:8080"
+    depends_on:
+      - catalog-provider
+
+  grpc-orchestrator:
+    build: ./grpc-orchestrator
+    container_name: grpc-orchestrator
+    ports:
+      - "8083:8080"
+    depends_on:
+      - catalog-provider
+
+  orchestrator:
+    build: ./orchestrator
+    container_name: orchestrator
+    ports:
+      - "8084:8080"
+    depends_on:
+      - rest-orchestrator
+      - grpc-orchestrator
+
+  scheduler:
+    build: ./scheduler
+    container_name: scheduler
+    depends_on:
+      - orchestrator
