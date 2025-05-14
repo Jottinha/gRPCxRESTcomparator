@@ -6,16 +6,28 @@
       <option name="ignoredModules">
         <list>
           <option value="catalog-provider" />
+          <option value="catalog-provider" />
+          <option value="catalog-provider" />
+          <option value="catalog-provider" />
+          <option value="catalog-provider" />
         </list>
       </option>
       <option name="ignoredPackages">
         <list>
           <option value="ch.qos.logback:logback-classic:1.4.14" />
+          <option value="ch.qos.logback:logback-core:1.4.14" />
+          <option value="org.apache.tomcat.embed:tomcat-embed-core:10.1.20" />
+          <option value="org.springframework:spring-web:6.1.6" />
+          <option value="org.springframework:spring-webmvc:6.1.6" />
         </list>
       </option>
       <option name="ignoredReasons">
         <list>
           <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="In progress" />
+          <option value="Fixed in branch" />
+          <option value="Other" />
         </list>
       </option>
     </inspection_tool>
