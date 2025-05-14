@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "catalog.grpc";
+option java_outer_classname = "CatalogProto";
+
+service CatalogService {
+  rpc GetCatalog (CatalogRequest) returns (CatalogResponse);
+}
+
+message CatalogRequest {
+  string client = 1;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  double price = 3;
+}
+
+message CatalogResponse {
+  string id = 1;
+  string client = 2;
+  repeated Product products = 3;
+}
