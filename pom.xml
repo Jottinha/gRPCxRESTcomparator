@@ -11,10 +11,7 @@
 
     <modules>
         <module>catalog-provider</module>
-        <module>grpc-orchestrator</module>
-        <module>rest-orchestrator</module>
         <module>scheduler</module>
-
     </modules>
 
 </project>
