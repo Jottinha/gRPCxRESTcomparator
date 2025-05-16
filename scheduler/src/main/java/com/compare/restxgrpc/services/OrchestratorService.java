@@ -10,21 +10,24 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.TimeUnit;
+
 public class OrchestratorService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ManagedChannel channel;
     private final CatalogServiceGrpc.CatalogServiceBlockingStub stub;
-    private String clientNameJson;
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final String clientNameJson;
 
     public OrchestratorService(String clientNameJson) {
-        // Cria o canal apenas uma vez no construtor
+        this.clientNameJson = clientNameJson;
+
         this.channel = ManagedChannelBuilder
                 .forAddress("localhost", 9090)
                 .usePlaintext()
                 .build();
 
         this.stub = CatalogServiceGrpc.newBlockingStub(channel);
-        this.clientNameJson = "client1";
     }
 
     public String getClientNameJson() {
@@ -34,9 +37,9 @@ public class OrchestratorService {
     public void runComparison() {
         warmUp();
 
-        System.out.println("Iniciando comparação REST x gRPC para o cliente: ");
+        System.out.println("Iniciando comparação REST x gRPC para o cliente: " + clientNameJson);
 
-        int runs = 10;
+        int runs = 100;
         long totalRestTime = 0;
         long totalGrpcTime = 0;
 
@@ -58,6 +61,7 @@ public class OrchestratorService {
         System.out.println("gRPC média: " + avgGrpc + " ms");
 
         compareResponses();
+        compareSizes();
     }
 
     public void shutdown() {
@@ -66,41 +70,40 @@ public class OrchestratorService {
         }
     }
 
-    public long restTimeCall(){
+    public long restTimeCall() {
         long startRest = System.nanoTime();
         String restUrl = "http://localhost:8080/catalogs/" + getClientNameJson();
-        Object restResponse = restTemplate.getForObject(restUrl, Object.class);
+        String restResponse = restTemplate.getForObject(restUrl, String.class);
         long endRest = System.nanoTime();
-        return (endRest - startRest) / 1_000_000;
+        return TimeUnit.NANOSECONDS.toMillis(endRest - startRest);
     }
 
-    public long gRpcTimeCall(){
+    public long gRpcTimeCall() {
         long startGrpc = System.nanoTime();
         CatalogRequest request = CatalogRequest.newBuilder().setClient(getClientNameJson()).build();
-        CatalogResponse grpcResponse = stub.getCatalog(request);
+        stub.getCatalog(request);
         long endGrpc = System.nanoTime();
-        return (endGrpc - startGrpc) / 1_000_000;
+        return TimeUnit.NANOSECONDS.toMillis(endGrpc - startGrpc);
     }
 
-    public Object restCallResponse(){
+    public String restCallResponse() {
         String restUrl = "http://localhost:8080/catalogs/" + getClientNameJson();
-        return restTemplate.getForObject(restUrl, Object.class);
+        return restTemplate.getForObject(restUrl, String.class);
     }
 
-    public CatalogResponse gRpcCallResponse(){
+    public CatalogResponse gRpcCallResponse() {
         CatalogRequest request = CatalogRequest.newBuilder().setClient(getClientNameJson()).build();
         return stub.getCatalog(request);
     }
 
     public void compareResponses() {
-        Object restResponse = restCallResponse();
+        String restResponse = restCallResponse();
         CatalogResponse grpcResponse = gRpcCallResponse();
 
         System.out.println("=== COMPARANDO CONTEÚDO DAS RESPOSTAS ===");
-        ObjectMapper mapper = new ObjectMapper();
 
         try {
-            JsonNode restJson = mapper.valueToTree(restResponse);
+            JsonNode restJson = mapper.readTree(restResponse);
 
             String grpcJsonString = JsonFormat.printer().print(grpcResponse);
             JsonNode grpcJson = mapper.readTree(grpcJsonString);
@@ -116,12 +119,26 @@ public class OrchestratorService {
             System.out.println("Erro ao comparar as respostas: " + e.getMessage());
         }
     }
-
-    public void warmUp(){
-        // Warm-up (aquecimento) - chamadas sem medir tempo
+    public void compareSizes() {
         try {
-            restTemplate.getForObject("http://localhost:8080/catalogs/" + getClientNameJson(), Object.class);
-        } catch (Exception e) {}
+            String restJson = restCallResponse();
+            byte[] restBytes = restJson.getBytes("UTF-8");
+
+            CatalogResponse grpcResp = gRpcCallResponse();
+            byte[] grpcBytes = grpcResp.toByteArray();
+
+            System.out.println("=== TAMANHO DOS PAYLOADS ===");
+            System.out.println("REST (JSON): " + restBytes.length + " bytes");
+            System.out.println("gRPC (Protobuf): " + grpcBytes.length + " bytes");
+        } catch (Exception e) {
+            System.out.println("Erro ao calcular tamanhos: " + e.getMessage());
+        }
+    }
+
+    public void warmUp() {
+        try {
+            restTemplate.getForObject("http://localhost:8080/catalogs/" + getClientNameJson(), String.class);
+        } catch (Exception ignored) {}
 
         ManagedChannel warmupChannel = ManagedChannelBuilder
                 .forAddress("localhost", 9090)
@@ -129,9 +146,9 @@ public class OrchestratorService {
                 .build();
         CatalogServiceGrpc.CatalogServiceBlockingStub warmupStub = CatalogServiceGrpc.newBlockingStub(warmupChannel);
         try {
-            CatalogRequest warmupRequest = CatalogRequest.newBuilder().setClient("Cliente XPTO").build();
+            CatalogRequest warmupRequest = CatalogRequest.newBuilder().setClient(getClientNameJson()).build();
             warmupStub.getCatalog(warmupRequest);
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
         warmupChannel.shutdown();
     }
 }

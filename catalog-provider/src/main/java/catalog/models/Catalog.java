@@ -1,10 +1,20 @@
 package catalog.models;
 
+import jakarta.persistence.*;
+
 import java.util.List;
 
+@Entity
+@Table(name = "catalog")
 public class Catalog {
+    @Id
+    @Column(name = "id")
     private String id;
+
+    @Column(name = "client")
     private String client;
+
+    @OneToMany(mappedBy = "catalog", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Product> products;
 
     public String getId() {

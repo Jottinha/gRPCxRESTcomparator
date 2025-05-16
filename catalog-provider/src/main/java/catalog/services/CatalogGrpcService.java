@@ -11,7 +11,11 @@ import net.devh.boot.grpc.server.service.GrpcService;
 @GrpcService
 public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBase {
 
-    private final CatalogService catalogService = new CatalogService();
+    private final CatalogService catalogService;
+
+    public CatalogGrpcService(CatalogService catalogService) {
+        this.catalogService = catalogService;
+    }
 
     @Override
     public void getCatalog(CatalogRequest request, StreamObserver<CatalogResponse> responseObserver) {
